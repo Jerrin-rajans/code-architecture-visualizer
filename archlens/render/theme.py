@@ -11,6 +11,8 @@ machines without Inter installed.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from ..models import EdgeKind
 
 FONT_STACK = "Inter,Segoe UI,Helvetica Neue,Helvetica,Arial,sans-serif"
@@ -44,19 +46,16 @@ NODE_ATTR: dict[str, str] = {
 }
 
 
+@dataclass(frozen=True, slots=True)
 class ClusterPalette:
     """One cluster's colour set, in light and dark variants."""
 
-    __slots__ = ("bg", "border", "text", "dark_bg", "dark_border", "dark_text")
-
-    def __init__(self, bg: str, border: str, text: str,
-                 dark_bg: str, dark_border: str, dark_text: str) -> None:
-        self.bg = bg
-        self.border = border
-        self.text = text
-        self.dark_bg = dark_bg
-        self.dark_border = dark_border
-        self.dark_text = dark_text
+    bg: str
+    border: str
+    text: str
+    dark_bg: str
+    dark_border: str
+    dark_text: str
 
 
 # Indexed by nesting depth, so a subnet inside a VPC reads as a distinct box.

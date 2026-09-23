@@ -16,7 +16,7 @@ component in the final architecture should be traceable back to a file on disk.
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -26,7 +26,7 @@ from pydantic import BaseModel, Field
 # --------------------------------------------------------------------------- #
 
 
-class Provider(str, Enum):
+class Provider(StrEnum):
     """Which icon family a component is drawn from."""
 
     AWS = "aws"
@@ -39,7 +39,7 @@ class Provider(str, Enum):
     GENERIC = "generic"
 
 
-class ComponentKind(str, Enum):
+class ComponentKind(StrEnum):
     """Coarse role of a component. Drives styling and layout rank."""
 
     CLIENT = "client"
@@ -64,7 +64,7 @@ class ComponentKind(str, Enum):
     INFRA = "infra"
 
 
-class EdgeKind(str, Enum):
+class EdgeKind(StrEnum):
     """How two components talk. Drives line style."""
 
     SYNC = "sync"  # request/response - solid line

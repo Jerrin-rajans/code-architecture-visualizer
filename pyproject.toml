@@ -33,7 +33,11 @@ dependencies = [
 [project.optional-dependencies]
 # The Claude pass. Without it, ArchLens runs static analysis only.
 ai = ["anthropic>=0.40"]
-dev = ["pytest>=8.0", "ruff>=0.4"]
+# ruff is pinned to a minor series on purpose. An unpinned linter turns every
+# upstream release into a surprise CI failure on an unrelated commit - which is
+# exactly how this project's first CI run went red (0.16 added PLR0917/UP042
+# that 0.12 did not have).
+dev = ["pytest>=8.0", "ruff>=0.16,<0.17"]
 
 [project.scripts]
 archlens = "archlens.cli:main"
@@ -82,6 +86,9 @@ ignore = [
 # Tests import inside functions to keep each regression's dependency visible
 # at the point it is exercised.
 "tests/*" = ["PLC0415"]
+# Typer derives the CLI from the function signature, so the parameter count is
+# fixed by the interface, not by choice.
+"archlens/cli.py" = ["PLR0917"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
