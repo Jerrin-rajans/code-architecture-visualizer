@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ArchLens</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#128208;</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+      <rect x="2" y="4"  width="11" height="8" rx="2"/>
+      <rect x="19" y="4"  width="11" height="8" rx="2"/>
+      <rect x="10.5" y="20" width="11" height="8" rx="2"/>
+      <path d="M7.5 12v4h17v-4M16 16v4"/>
+    </svg>
+    <div>
+      <h1>ArchLens</h1>
+      <p>Codebase → architecture, end to end</p>
+    </div>
+  </div>
+
+  <div class="topbar-actions">
+    <div id="capabilities" class="capabilities" aria-label="Installed capabilities"></div>
+    <button id="themeToggle" class="icon-btn" title="Toggle theme" aria-label="Toggle theme">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- ─────────────────────── Sidebar ─────────────────────── -->
+  <aside class="sidebar">
+    <form id="scanForm" class="panel">
+      <h2 class="panel-title">Scan a repository</h2>
+
+      <label class="field">
+        <span class="field-label">Repository path</span>
+        <div class="path-row">
+          <input id="pathInput" type="text" placeholder="C:\path\to\your\project" spellcheck="false" required>
+          <button type="button" id="browseBtn" class="ghost-btn" title="Browse folders">Browse</button>
+        </div>
+      </label>
+
+      <fieldset class="options">
+        <legend class="field-label">Options</legend>
+
+        <label class="check">
+          <input type="checkbox" id="useLlm" checked>
+          <span>
+            <strong>Semantic analysis with Claude</strong>
+            <small id="llmHint">Infers intent, names and real call paths</small>
+          </span>
+        </label>
+
+        <label class="check">
+          <input type="checkbox" id="darkDiagram">
+          <span>
+            <strong>Dark diagram canvas</strong>
+            <small>Renders the architecture on a dark background</small>
+          </span>
+        </label>
+
+        <label class="field inline">
+          <span class="field-label">Layout</span>
+          <select id="direction">
+            <option value="LR">Left → right</option>
+            <option value="TB">Top → bottom</option>
+          </select>
+        </label>
+      </fieldset>
+
+      <button type="submit" id="scanBtn" class="primary-btn">
+        <span class="btn-label">Analyse codebase</span>
+      </button>
+
+      <div id="progress" class="progress" hidden>
+        <div class="progress-track"><div id="progressBar" class="progress-bar"></div></div>
+        <p id="progressMsg" class="progress-msg">Starting…</p>
+      </div>
+    </form>
+
+    <section class="panel" id="historyPanel" hidden>
+      <h2 class="panel-title">Recent scans</h2>
+      <ul id="historyList" class="history"></ul>
+    </section>
+  </aside>
+
+  <!-- ─────────────────────── Main ─────────────────────── -->
+  <main class="content">
+
+    <!-- Empty state -->
+    <section id="emptyState" class="empty">
+      <svg class="empty-art" viewBox="0 0 240 150" aria-hidden="true">
+        <rect x="14"  y="20" width="62" height="34" rx="6"/>
+        <rect x="90"  y="20" width="62" height="34" rx="6"/>
+        <rect x="166" y="20" width="60" height="34" rx="6"/>
+        <rect x="52"  y="96" width="62" height="34" rx="6"/>
+        <rect x="128" y="96" width="62" height="34" rx="6"/>
+        <path d="M45 54v20h140V54M83 74v22M159 74v22"/>
+      </svg>
+      <h2>Point it at a codebase</h2>
+      <p>
+        ArchLens reads the source, the dependency manifests and the
+        infrastructure-as-code, then draws the system the way an architect would:
+        a cloud architecture diagram with real AWS, Azure and GCP iconography,
+        plus flowcharts for how requests actually move through it.
+      </p>
+      <div class="empty-steps">
+        <div><span>1</span> Static analysis maps files, imports, routes and IaC resources</div>
+        <div><span>2</span> Claude interprets what it all means</div>
+        <div><span>3</span> Graphviz renders it as a diagram you can ship</div>
+      </div>
+    </section>
+
+    <!-- Error state -->
+    <section id="errorState" class="error-state" hidden>
+      <h2>Scan failed</h2>
+      <pre id="errorText"></pre>
+    </section>
+
+    <!-- Results -->
+    <section id="results" hidden>
+
+      <div class="result-head">
+        <div>
+          <h2 id="projectName">—</h2>
+          <p id="projectSummary" class="summary"></p>
+        </div>
+        <div id="statChips" class="stat-chips"></div>
+      </div>
+
+      <div id="warnings" class="warnings" hidden></div>
+
+      <nav class="tabs" role="tablist">
+        <button class="tab active" data-tab="architecture" role="tab">Architecture</button>
+        <button class="tab" data-tab="flows" role="tab">Flowcharts</button>
+        <button class="tab" data-tab="components" role="tab">Components</button>
+        <button class="tab" data-tab="stack" role="tab">Tech stack</button>
+        <button class="tab" data-tab="evidence" role="tab">Evidence</button>
+      </nav>
+
+      <!-- Architecture tab -->
+      <div class="tab-panel active" data-panel="architecture">
+        <div class="viewer-toolbar">
+          <div class="viewer-tabs" id="diagramTabs"></div>
+          <div class="viewer-controls">
+            <button class="ghost-btn" id="zoomOut" title="Zoom out">−</button>
+            <span id="zoomLevel" class="zoom-level">100%</span>
+            <button class="ghost-btn" id="zoomIn" title="Zoom in">+</button>
+            <button class="ghost-btn" id="zoomFit" title="Fit to view">Fit</button>
+            <a class="ghost-btn" id="downloadPng" download>PNG</a>
+            <a class="ghost-btn" id="downloadSvg" download>SVG</a>
+          </div>
+        </div>
+        <div class="viewer" id="viewer">
+          <div class="viewer-stage" id="viewerStage"></div>
+        </div>
+        <div class="legend" id="legend"></div>
+      </div>
+
+      <!-- Flows tab -->
+      <div class="tab-panel" data-panel="flows">
+        <div id="flowList" class="flow-list"></div>
+      </div>
+
+      <!-- Components tab -->
+      <div class="tab-panel" data-panel="components">
+        <div id="componentGrid" class="component-grid"></div>
+      </div>
+
+      <!-- Stack tab -->
+      <div class="tab-panel" data-panel="stack">
+        <div id="stackGrid" class="stack-grid"></div>
+        <div id="highlights" class="highlights"></div>
+      </div>
+
+      <!-- Evidence tab -->
+      <div class="tab-panel" data-panel="evidence">
+        <div id="evidenceBody" class="evidence"></div>
+      </div>
+
+    </section>
+  </main>
+</div>
+
+<!-- Folder picker -->
+<dialog id="browseDialog" class="browse-dialog">
+  <header>
+    <h3>Choose a repository</h3>
+    <button type="button" class="icon-btn" id="browseClose" aria-label="Close">×</button>
+  </header>
+  <p id="browsePath" class="browse-path"></p>
+  <ul id="browseList" class="browse-list"></ul>
+  <footer>
+    <button type="button" class="ghost-btn" id="browseUp">↑ Up</button>
+    <button type="button" class="primary-btn" id="browseSelect">Select this folder</button>
+  </footer>
+</dialog>
+
+<script type="module" src="/app.js"></script>
+</body>
+</html>

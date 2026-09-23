@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ArchLens output
+archlens-output/
+self-scan/
+shop-scan/
+test-out/
+*.log
+
+# Vendored Graphviz binaries (see README → Install).
+# ~90 MB of native DLLs; every machine installs its own.
+.tools/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

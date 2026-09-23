@@ -1,0 +1,87 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "archlens"
+version = "1.0.0"
+description = "Scan any codebase, understand it, and draw the architecture — cloud diagrams with real AWS/Azure/GCP iconography, plus flowcharts."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Jerrin Rajan" }]
+keywords = ["architecture", "diagrams", "static-analysis", "documentation", "claude"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Documentation",
+]
+
+dependencies = [
+    "pydantic>=2.6",
+    "typer>=0.12",
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.29",
+    "diagrams>=0.23",
+    "PyYAML>=6.0",
+    "pathspec>=0.12",
+]
+
+[project.optional-dependencies]
+# The Claude pass. Without it, ArchLens runs static analysis only.
+ai = ["anthropic>=0.40"]
+dev = ["pytest>=8.0", "ruff>=0.4"]
+
+[project.scripts]
+archlens = "archlens.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/Jerrin-rajans/code-architecture-visualizer"
+Issues = "https://github.com/Jerrin-rajans/code-architecture-visualizer/issues"
+
+[tool.setuptools.packages.find]
+include = ["archlens*"]
+
+[tool.setuptools.package-data]
+archlens = ["server/static/*", "render/assets/*.png"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "PL"]
+ignore = [
+    "E501",     # line length - the detection tables read better as wide rows
+    "PLR0912",  # branch count
+    "PLR0913",  # argument count
+    "PLR0915",  # statement count
+    "PLR2004",  # magic values - confidence thresholds are clearer inline
+    # Deferred imports are deliberate, not an oversight: importing `diagrams`
+    # pulls in 34 MB of icon assets and `anthropic` is optional entirely, so
+    # both are imported inside the functions that need them. See
+    # archlens/render/icons.py and archlens/inference/llm.py.
+    "PLC0415",
+    # `typer.Option(...)` / `typer.Argument(...)` in argument defaults is the
+    # documented Typer idiom; B008 is written for a different style of API.
+    "B008",
+    # Dispatch functions (parse_manifest, parse_iac, _describe) are a flat
+    # sequence of early returns by design - collapsing them would obscure it.
+    "PLR0911",
+    # `ProgramFiles` / `ProgramFiles(x86)` are the canonical Windows spellings;
+    # os.environ is case-insensitive there, so the uppercase form gains nothing.
+    "SIM112",
+    # One module-level memo flag guards a filesystem probe that must run once.
+    "PLW0603",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests import inside functions to keep each regression's dependency visible
+# at the point it is exercised.
+"tests/*" = ["PLC0415"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,127 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test (python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      # Graphviz is a native binary that pip cannot supply. Without it the
+      # renderer raises GraphvizMissingError and the smoke test below is
+      # meaningless, so install it before the package.
+      - name: Install Graphviz
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends graphviz
+          dot -V
+
+      - name: Install package
+        run: pip install -e ".[dev]"
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Test
+        run: pytest -q
+
+  render:
+    name: render smoke test
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install Graphviz
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends graphviz
+
+      - name: Install package
+        run: pip install -e .
+
+      - name: Check optional dependencies resolve
+        run: archlens doctor
+
+      # The unit tests cover analysis and SVG post-processing, but nothing
+      # exercises Graphviz end to end. This does: it scans the repo and fails
+      # if no diagram comes out the other side.
+      - name: Scan this repository
+        run: archlens scan . --no-llm -o ./diagrams
+
+      - name: Verify the diagram rendered
+        run: |
+          python - <<'PY'
+          import json, pathlib, sys
+
+          out = pathlib.Path("diagrams/code-architecture-visualizer")
+          if not out.is_dir():
+              out = next(pathlib.Path("diagrams").iterdir())
+
+          png = out / "architecture.png"
+          svg = out / "architecture.svg"
+          model = out / "architecture.json"
+
+          problems = []
+          if not png.is_file() or png.stat().st_size < 10_000:
+              problems.append(f"missing or suspiciously small PNG: {png}")
+          if not svg.is_file():
+              problems.append(f"missing SVG: {svg}")
+          else:
+              text = svg.read_text(encoding="utf-8")
+              # Icons must be embedded, not referenced by a runner-local path.
+              if "data:image/png;base64," not in text:
+                  problems.append("SVG contains no inlined icons")
+              if 'href="/' in text or "file://" in text:
+                  problems.append("SVG still references local filesystem paths")
+
+          if not model.is_file():
+              problems.append(f"missing model: {model}")
+          else:
+              data = json.loads(model.read_text(encoding="utf-8"))
+              components = data["architecture"]["components"]
+              if len(components) < 2:
+                  problems.append(f"only {len(components)} components found")
+
+          if problems:
+              print("\n".join(f"  - {p}" for p in problems))
+              sys.exit(1)
+
+          print(f"OK: {len(components)} components, "
+                f"{png.stat().st_size // 1024} KB PNG, "
+                f"{svg.stat().st_size // 1024} KB SVG")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: architecture-diagrams
+          path: diagrams/
+          if-no-files-found: error

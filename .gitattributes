@@ -1,0 +1,9 @@
+# Normalise line endings so the repo is identical on Windows, macOS and Linux.
+* text=auto eol=lf
+
+# Binary assets must never be transformed.
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff  binary
+*.woff2 binary
