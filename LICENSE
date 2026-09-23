@@ -19,19 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-Icon attribution
-----------------
-
-Cloud provider and technology icons are supplied at runtime by the `diagrams`
-package (https://github.com/mingrammer/diagrams, MIT), which bundles the
-official AWS, Azure, Google Cloud, Kubernetes and Elastic icon sets. Those
-icons remain the property of their respective owners and are subject to each
-vendor's own trademark and brand guidelines.
-
-The tiles in `archlens/render/assets/` are original to this project. They are
-generic role glyphs in approximate brand colours — a card for payments, an
-envelope for email — and are deliberately **not** reproductions of any
-company's logo.
